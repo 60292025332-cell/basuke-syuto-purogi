@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>バスケシューティング</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      color: #eee;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      letter-spacing: 2px;
+      color: #f4a438;
+      text-shadow: 0 0 12px #f4a43899;
+    }
+
+    /* ===== スタート画面 ===== */
+    #startScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .difficulty-label { font-size: 1rem; color: #aaa; }
+
+    .diff-slider-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 340px;
+    }
+
+    #diffSlider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #4cff72, #f4a438, #ff4c4c);
+      outline: none;
+      cursor: pointer;
+    }
+    #diffSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #f4a438;
+      cursor: pointer;
+      box-shadow: 0 0 8px #f4a43888;
+    }
+    #diffSlider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #f4a438;
+      cursor: pointer;
+    }
+
+    .diff-level-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 0.72rem;
+      color: #555;
+    }
+
+    #diffLevelBadge {
+      font-size: 1.4rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      padding: 4px 20px;
+      border-radius: 20px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .diff-desc {
+      font-size: 0.82rem;
+      color: #888;
+      text-align: center;
+      min-height: 1.2em;
+    }
+
+    #startBtn {
+      padding: 14px 48px;
+      background: #f4a438;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    #startBtn:hover { transform: scale(1.05); }
+
+    /* ===== ゲーム画面 ===== */
+    #gameScreen { display: none; flex-direction: column; align-items: center; gap: 8px; }
+
+    #hud {
+      display: flex;
+      gap: 36px;
+      font-size: 1.05rem;
+      background: #16213e;
+      padding: 8px 28px;
+      border-radius: 10px;
+      border: 1px solid #f4a43855;
+    }
+    #hud span { color: #f4a438; font-weight: bold; }
+
+    #diffBadge {
+      font-size: 0.75rem;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    #gameCanvas {
+      border-radius: 12px;
+      border: 2px solid #f4a43866;
+      cursor: crosshair;
+      display: block;
+    }
+
+    #powerBarWrap {
+      width: 420px;
+      height: 16px;
+      background: #16213e;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #f4a43866;
+      position: relative;
+    }
+    #powerBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4cff72 0%, #f4a438 55%, #ff4c4c 100%);
+      border-radius: 8px;
+      transition: width 0.03s linear;
+    }
+
+    #powerLabel { font-size: 0.82rem; color: #666; }
+
+    /* ===== コンボ ===== */
+    #comboDisplay {
+      font-size: 1.1rem;
+      min-height: 1.5em;
+      color: #4cff72;
+      font-weight: bold;
+      text-shadow: 0 0 10px #4cff7288;
+    }
+
+    /* ===== 結果画面 ===== */
+    #resultScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    #resultTitle { font-size: 2.2rem; color: #f4a438; }
+    #resultDetail {
+      font-size: 1.05rem;
+      color: #ccc;
+      text-align: center;
+      line-height: 2;
+      background: #16213e;
+      padding: 20px 40px;
+      border-radius: 12px;
+      border: 1px solid #f4a43844;
+    }
+    .result-buttons { display: flex; gap: 16px; }
+    .result-btn {
+      padding: 12px 36px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #retryBtn  { background: #f4a438; color: #1a1a2e; }
+    #menuBtn   { background: #16213e; color: #f4a438; border: 2px solid #f4a438; }
+    .result-btn:hover { transform: scale(1.05); }
+
+    #hint { font-size: 0.78rem; color: #555; }
+
+    /* ===== SP表示（スタート画面） ===== */
+    #spDisplay {
+      font-size: 0.95rem;
+      color: #f4a438;
+      background: #16213e;
+      padding: 6px 20px;
+      border-radius: 20px;
+      border: 1px solid #f4a43844;
+    }
+    #statusBtn {
+      padding: 10px 30px;
+      background: transparent;
+      color: #88ccff;
+      border: 1.5px solid #88ccff88;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #statusBtn:hover { background: #88ccff22; }
+
+    /* ===== ステータス画面 ===== */
+    #statusScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    #statusScreen h2 {
+      font-size: 1.6rem;
+      color: #88ccff;
+      letter-spacing: 2px;
+    }
+    #spRemain {
+      font-size: 1.1rem;
+      color: #f4a438;
+      background: #16213e;
+      padding: 6px 24px;
+      border-radius: 20px;
+      border: 1px solid #f4a43844;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      width: 520px;
+    }
+    .stat-card {
+      background: #16213e;
+      border: 1px solid #ffffff22;
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .stat-card-title {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #eee;
+    }
+    .stat-card-desc {
+      font-size: 0.75rem;
+      color: #777;
+      min-height: 2.2em;
+    }
+    .stat-bar-wrap {
+      height: 8px;
+      background: #0d2a50;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .stat-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .stat-lv {
+      font-size: 0.82rem;
+      color: #aaa;
+      flex: 1;
+    }
+    .stat-cost {
+      font-size: 0.75rem;
+      color: #f4a43899;
+    }
+    .stat-up-btn {
+      padding: 4px 14px;
+      background: #f4a43833;
+      color: #f4a438;
+      border: 1px solid #f4a43866;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .stat-up-btn:hover:not(:disabled) { background: #f4a43866; }
+    .stat-up-btn:disabled { opacity: 0.3; cursor: default; }
+    .stat-reset-btn {
+      padding: 4px 12px;
+      background: transparent;
+      color: #ff6666;
+      border: 1px solid #ff666644;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .stat-reset-btn:hover { background: #ff666622; }
+    #statusBackBtn {
+      padding: 10px 36px;
+      background: transparent;
+      color: #f4a438;
+      border: 1.5px solid #f4a43888;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #statusBackBtn:hover { background: #f4a43822; }
+
+    /* 結果画面のSP獲得表示 */
+    #resultSpGain {
+      font-size: 1rem;
+      color: #88ccff;
+      font-weight: bold;
+    }
+
+    /* ===== ポーズボタン ===== */
+    #pauseBtn {
+      padding: 6px 18px;
+      background: transparent;
+      color: #f4a438;
+      border: 1.5px solid #f4a43888;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      letter-spacing: 1px;
+    }
+    #pauseBtn:hover { background: #f4a43822; }
+
+    /* ===== ポーズオーバーレイ ===== */
+    #pauseOverlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 20, 40, 0.78);
+      border-radius: 10px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      pointer-events: all;
+    }
+    #pauseOverlay.active { display: flex; }
+
+    #pauseTitle {
+      font-size: 2.2rem;
+      color: #f4a438;
+      font-weight: bold;
+      letter-spacing: 3px;
+      text-shadow: 0 0 16px #f4a43899;
+    }
+    #pauseSubtitle { font-size: 0.9rem; color: #888; }
+
+    #resumeBtn {
+      padding: 12px 44px;
+      background: #f4a438;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #resumeBtn:hover { transform: scale(1.05); }
+
+    #pauseMenuBtn {
+      padding: 10px 36px;
+      background: transparent;
+      color: #f4a438;
+      border: 1.5px solid #f4a43888;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #pauseMenuBtn:hover { background: #f4a43822; transform: scale(1.05); }
+
+    /* キャンバスラッパー（オーバーレイ配置用） */
+    #canvasWrap {
+      position: relative;
+      line-height: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- スタート画面 -->
+<div id="startScreen">
+  <h1>🏀 バスケシューティング</h1>
+  <p class="difficulty-label">難易度を選んでください</p>
+  <div class="diff-slider-wrap">
+    <div id="diffLevelBadge">Lv.1　BEGINNER</div>
+    <input type="range" id="diffSlider" min="1" max="10" value="1" step="1" />
+    <div class="diff-level-row">
+      <span>Lv.1</span><span>Lv.5</span><span>Lv.10</span>
+    </div>
+  </div>
+  <p class="diff-desc" id="diffDesc">ゴール固定・広いリム・50秒</p>
+  <div id="spDisplay">💎 SP: <span id="spVal">0</span></div>
+  <div style="display:flex;gap:12px">
+    <button id="startBtn">ゲームスタート</button>
+    <button id="statusBtn">📊 ステータス</button>
+  </div>
+</div>
+
+<!-- ステータス割り振り画面 -->
+<div id="statusScreen">
+  <h1>🏀 バスケシューティング</h1>
+  <h2>📊 ステータス割り振り</h2>
+  <div id="spRemain">💎 残りSP: <span id="spRemainVal">0</span></div>
+  <div class="stat-grid" id="statGrid">
+    <!-- JS で生成 -->
+  </div>
+  <button id="statusBackBtn">← メニューへ戻る</button>
+</div>
+
+<!-- ゲーム画面 -->
+<div id="gameScreen">
+  <h1>🏀 バスケシューティング</h1>
+  <div id="hud">
+    <div>スコア: <span id="scoreVal">0</span></div>
+    <div>残り: <span id="timeVal">30</span>秒</div>
+    <div>成功: <span id="madeVal">0</span> / <span id="shotVal">0</span></div>
+    <div id="diffBadge">EASY</div>
+    <button id="pauseBtn">⏸ ポーズ</button>
+  </div>
+  <div id="canvasWrap">
+    <canvas id="gameCanvas" width="600" height="450"></canvas>
+    <div id="pauseOverlay">
+      <div id="pauseTitle">⏸ PAUSED</div>
+      <div id="pauseSubtitle">Space キーまたはボタンで再開</div>
+      <button id="resumeBtn">▶ 再開</button>
+      <button id="pauseMenuBtn">🏠 メニューへ戻る</button>
+    </div>
+  </div>
+  <div id="powerBarWrap"><div id="powerBar"></div></div>
+  <div id="powerLabel">パワーゲージ ── 押している間に大↔小を繰り返す、離したら発射！</div>
+  <div id="comboDisplay"></div>
+  <div id="hint">クリック長押し中にゲージが振動 ── ちょうどいいパワーで離す</div>
+</div>
+
+<!-- 結果画面 -->
+<div id="resultScreen">
+  <h1>🏀 バスケシューティング</h1>
+  <div id="resultTitle">ゲーム終了！</div>
+  <div id="resultDetail"></div>
+  <div id="resultSpGain"></div>
+  <div class="result-buttons">
+    <button class="result-btn" id="retryBtn">もう一度</button>
+    <button class="result-btn" id="menuBtn">メニューへ</button>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  定数
+// ================================================================
+// ================================================================
+//  ステータスシステム
+// ================================================================
+const STAT_DEFS = [
+  {
+    id: 'rimBonus',
+    label: '🎯 リム幅UP',
+    desc: 'ゴールが広くなる\n（最大 +40px）',
+    color: '#4cff72',
+    maxLv: 10,
+    costPerLv: 5,        // 1LVあたりのSPコスト
+    effectPerLv: 4,      // 1LVあたりのリム幅増加 (px)
+  },
+  {
+    id: 'cooldownReduct',
+    label: '⚡ 連射速度UP',
+    desc: '連射クールダウンが短くなる\n（最大 -300ms）',
+    color: '#ffe000',
+    maxLv: 10,
+    costPerLv: 5,
+    effectPerLv: 30,     // 1LVあたりのクールダウン削減 (ms)
+  },
+  {
+    id: 'gaugeStable',
+    label: '🌀 ゲージ安定',
+    desc: 'パワーゲージの振動が\nゆっくりになる（最大 -60%）',
+    color: '#88ccff',
+    maxLv: 10,
+    costPerLv: 4,
+    effectPerLv: 0.06,   // 1LVあたりの振動速度倍率削減
+  },
+  {
+    id: 'gravityReduct',
+    label: '🪨 重力軽減',
+    desc: '重力が弱くなり弧を\n描きやすくなる（最大 -30%）',
+    color: '#ff88cc',
+    maxLv: 10,
+    costPerLv: 6,
+    effectPerLv: 0.03,   // 1LVあたりの重力削減
+  },
+  {
+    id: 'pointBonus',
+    label: '💰 獲得点数UP',
+    desc: '1本あたりの基本得点が\n増える（最大 +10点/本）',
+    color: '#ffd700',
+    maxLv: 10,
+    costPerLv: 8,
+    effectPerLv: 1,      // 1LVあたりの基本得点増加
+  },
+  {
+    id: 'luckyBall',
+    label: '🌟 ラッキーボール',
+    desc: '高得点ボールの出現確率UP\nLv.10で出現率が約3倍に',
+    color: '#cc88ff',
+    maxLv: 10,
+    costPerLv: 7,
+    effectPerLv: 0.2,    // 1LVあたりの確率倍率加算（基準の+20%ずつ）
+  },
+];
+
+// ステータスレベル（ページを跨いでも保持）
+let statLevels = { rimBonus: 0, cooldownReduct: 0, gaugeStable: 0, gravityReduct: 0, pointBonus: 0, luckyBall: 0 };
+let totalSP = 0;   // 累計獲得SP（使っても減らない）
+let spentSP = 0;   // 消費済みSP
+function getFreeSP() { return totalSP - spentSP; }
+
+// ステータスをゲームパラメータに反映する
+function applyStats(baseCfg) {
+  const applied = Object.assign({}, baseCfg);
+  const sl = statLevels;
+  // リム幅
+  applied.hoopW = baseCfg.hoopW + (sl.rimBonus || 0) * STAT_DEFS[0].effectPerLv;
+  // クールダウン
+  applied.shotCooldown = Math.max(150, baseCfg.shotCooldown - (sl.cooldownReduct || 0) * STAT_DEFS[1].effectPerLv);
+  // 振動速度 (割合削減)
+  applied._gaugeSpeedMult = 1.0 - (sl.gaugeStable || 0) * STAT_DEFS[2].effectPerLv;
+  // 重力
+  applied.ballGravity = Math.max(0.1, baseCfg.ballGravity - (sl.gravityReduct || 0) * STAT_DEFS[3].effectPerLv);
+  // 基本得点（整数に丸める）
+  applied.pointBase = Math.round(baseCfg.pointBase + (sl.pointBonus || 0) * STAT_DEFS[4].effectPerLv);
+  return applied;
+}
+
+// ================================================================
+//  難易度定義（10段階）
+//  Lv.1〜10 で各パラメータを線形〜指数的に変化させる
+// ================================================================
+const LEVEL_NAMES = [
+  'BEGINNER', 'EASY', 'NORMAL', 'AVERAGE', 'MEDIUM',
+  'HARD', 'EXPERT', 'MASTER', 'INSANE', 'LEGEND',
+];
+// Lv ごとのカラー（緑→黄→橙→赤→紫）
+const LEVEL_COLORS = [
+  '#4cff72','#a8ff3e','#d4ff00','#ffe000','#ffa500',
+  '#ff6a00','#ff3c00','#ff004c','#cc00ff','#7700ff',
+];
+
+// Lv.1〜10 の設定を生成（lvは1始まり）
+function buildDifficulty(lv) {
+  const t = (lv - 1) / 9; // 0.0 〜 1.0
+  const color = LEVEL_COLORS[lv - 1];
+  return {
+    label:       `Lv.${lv} ${LEVEL_NAMES[lv - 1]}`,
+    badge:       `Lv.${lv}`,
+    badgeColor:  color,
+    rimColor:    color,
+    timeLimit:   Math.round(50 - t * 25),          // 50 〜 25 秒
+    hoopW:       Math.round(96 - t * 46),          // 96 〜 50 px
+    hoopSpeed:   parseFloat((t * 3.2).toFixed(2)), // 0 〜 3.2
+    windForce:   lv >= 6 ? parseFloat(((lv - 5) * 0.018).toFixed(3)) : 0, // Lv.6〜で風
+    ballGravity: parseFloat((0.28 + t * 0.22).toFixed(3)), // 0.28 〜 0.50
+    shotCooldown:Math.round(500 + t * 350),        // 500 〜 850 ms
+    pointBase:   lv,                               // 1 〜 10 点
+    desc: buildDesc(lv, t),
+  };
+}
+
+function buildDesc(lv, t) {
+  const parts = [];
+  if (t === 0)       parts.push('ゴール固定');
+  else if (t < 0.45) parts.push('ゴールがゆっくり動く');
+  else if (t < 0.78) parts.push('ゴールが速く動く');
+  else               parts.push('ゴールが激しく動く');
+
+  const hw = Math.round(96 - t * 46);
+  parts.push(`リム幅 ${hw}px`);
+
+  if (lv >= 6) parts.push(`風あり`);
+
+  parts.push(`${Math.round(50 - t * 25)}秒`);
+  parts.push(`1本 ${lv}点`);
+  return parts.join('・');
+}
+
+// Lv.1〜10 のテーブルを生成
+const DIFFICULTIES = {};
+for (let i = 1; i <= 10; i++) {
+  DIFFICULTIES[i] = buildDifficulty(i);
+}
+
+const CW = 600, CH = 450;
+const BALL_R = 14;
+const HOOP_Y = 108;          // リムのY座標
+const BB_H   = 68;           // バックボードの高さ
+const BB_W   = 108;          // バックボードの幅
+const BALL_SX = CW / 2;      // 発射X
+const BALL_SY = CH - 55;     // 発射Y
+const MAX_POWER = 100;
+// ※ POWER_RATE は廃止（パワーは自動で振動する）
+
+// ================================================================
+//  ゲーム状態
+// ================================================================
+let diff = 1;           // 1〜10
+let cfg  = DIFFICULTIES[diff];
+let score, shots, made, combo, maxCombo, timeLeft;
+let gameRunning = false;
+let paused      = false;
+let hoopX, hoopDir;
+let balls, particles, floatTexts;
+let power, charging, lastShotTime;
+let nextRarity = null;   // 次に発射されるボールのレアリティ（事前抽選）
+let powerPhase = 0;       // パワー振動の位相
+let powerOscSpeed = 0;    // 振動速度（難易度で変わる）
+let mouseX = BALL_SX, mouseY = BALL_SY - 80;
+let windX;
+let windPhase     = 0;   // サイン波の位相
+let windSpeed     = 0;   // 位相の進み速度（変化の速さ）
+let windAmplitude = 0;   // 振幅（最大風力）
+let windGust      = 0;   // 突風成分
+let windGustTimer = 0;   // 突風タイマー（残フレーム数）
+let timerInterval = null, animFrameId = null;
+
+// ================================================================
+//  DOM
+// ================================================================
+const canvas      = document.getElementById('gameCanvas');
+const ctx         = canvas.getContext('2d');
+const startScreen = document.getElementById('startScreen');
+const gameScreen  = document.getElementById('gameScreen');
+const resultScreen= document.getElementById('resultScreen');
+const scoreVal    = document.getElementById('scoreVal');
+const timeVal     = document.getElementById('timeVal');
+const shotVal     = document.getElementById('shotVal');
+const madeVal     = document.getElementById('madeVal');
+const powerBar    = document.getElementById('powerBar');
+const comboDisplay= document.getElementById('comboDisplay');
+const resultDetail= document.getElementById('resultDetail');
+const diffBadge    = document.getElementById('diffBadge');
+const diffDesc     = document.getElementById('diffDesc');
+const pauseBtn     = document.getElementById('pauseBtn');
+const pauseOverlay = document.getElementById('pauseOverlay');
+const resumeBtn    = document.getElementById('resumeBtn');
+const pauseMenuBtn = document.getElementById('pauseMenuBtn');
+
+// ================================================================
+//  難易度スライダー
+// ================================================================
+const diffSlider     = document.getElementById('diffSlider');
+const diffLevelBadge = document.getElementById('diffLevelBadge');
+
+function applyDiffLevel(lv) {
+  diff = lv;
+  const c = DIFFICULTIES[lv];
+  diffLevelBadge.textContent   = `Lv.${lv}　${LEVEL_NAMES[lv - 1]}`;
+  diffLevelBadge.style.color   = c.badgeColor;
+  diffLevelBadge.style.background = c.badgeColor + '22';
+  diffLevelBadge.style.border  = `1.5px solid ${c.badgeColor}66`;
+  diffDesc.textContent         = c.desc;
+}
+
+diffSlider.addEventListener('input', () => {
+  applyDiffLevel(parseInt(diffSlider.value));
+});
+
+// 初期表示
+applyDiffLevel(1);
+
+// ================================================================
+//  SP & ステータス 永続化
+// ================================================================
+function saveSP() {
+  localStorage.setItem('bsk_totalSP',  totalSP);
+  localStorage.setItem('bsk_spentSP',  spentSP);
+  localStorage.setItem('bsk_statLvs',  JSON.stringify(statLevels));
+}
+function loadSP() {
+  totalSP    = parseInt(localStorage.getItem('bsk_totalSP')  || '0');
+  spentSP    = parseInt(localStorage.getItem('bsk_spentSP')  || '0');
+  const sl   = localStorage.getItem('bsk_statLvs');
+  if (sl) {
+    const parsed = JSON.parse(sl);
+    // 後から追加したキーが古いデータに存在しない場合に備えてデフォルト値をマージ
+    statLevels = Object.assign(
+      { rimBonus: 0, cooldownReduct: 0, gaugeStable: 0, gravityReduct: 0, pointBonus: 0, luckyBall: 0 },
+      parsed
+    );
+  }
+}
+loadSP();
+
+function updateSpDisplay() {
+  document.getElementById('spVal').textContent = getFreeSP();
+  document.getElementById('spRemainVal').textContent = getFreeSP();
+}
+updateSpDisplay();
+
+// ================================================================
+//  ステータス画面
+// ================================================================
+const statusScreen  = document.getElementById('statusScreen');
+const statGrid      = document.getElementById('statGrid');
+
+function renderStatGrid() {
+  statGrid.innerHTML = '';
+  STAT_DEFS.forEach(def => {
+    const lv      = statLevels[def.id];
+    const maxed   = lv >= def.maxLv;
+    const cost    = def.costPerLv;
+    const canUp   = !maxed && getFreeSP() >= cost;
+    const fillPct = (lv / def.maxLv * 100).toFixed(0);
+
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.innerHTML = `
+      <div class="stat-card-title">${def.label}</div>
+      <div class="stat-card-desc">${def.desc.replace(/\n/g,'<br>')}</div>
+      <div class="stat-bar-wrap">
+        <div class="stat-bar-fill" style="width:${fillPct}%;background:${def.color}"></div>
+      </div>
+      <div class="stat-controls">
+        <span class="stat-lv">Lv. ${lv} / ${def.maxLv}</span>
+        <span class="stat-cost">${maxed ? 'MAX' : `${cost} SP/Lv`}</span>
+        <button class="stat-up-btn" data-id="${def.id}" ${canUp ? '' : 'disabled'}>
+          ${maxed ? 'MAX' : '▲ UP'}
+        </button>
+        ${lv > 0 ? `<button class="stat-reset-btn" data-reset="${def.id}">戻す</button>` : ''}
+      </div>`;
+    statGrid.appendChild(card);
+  });
+
+  // UPボタン
+  statGrid.querySelectorAll('.stat-up-btn:not(:disabled)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const def = STAT_DEFS.find(d => d.id === btn.dataset.id);
+      if (!def) return;
+      if (getFreeSP() < def.costPerLv) return;
+      if (statLevels[def.id] >= def.maxLv) return;
+      statLevels[def.id]++;
+      spentSP += def.costPerLv;
+      saveSP();
+      updateSpDisplay();
+      renderStatGrid();
+    });
+  });
+
+  // 戻すボタン（1Lv分のSPを返還）
+  statGrid.querySelectorAll('.stat-reset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id  = btn.dataset.reset;
+      const def = STAT_DEFS.find(d => d.id === id);
+      if (!def || statLevels[id] <= 0) return;
+      statLevels[id]--;
+      spentSP -= def.costPerLv;
+      saveSP();
+      updateSpDisplay();
+      renderStatGrid();
+    });
+  });
+}
+
+document.getElementById('statusBtn').addEventListener('click', () => {
+  startScreen.style.display  = 'none';
+  statusScreen.style.display = 'flex';
+  renderStatGrid();
+  updateSpDisplay();
+});
+
+document.getElementById('statusBackBtn').addEventListener('click', () => {
+  statusScreen.style.display = 'none';
+  startScreen.style.display  = 'flex';
+});
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('retryBtn').addEventListener('click', startGame);
+document.getElementById('menuBtn').addEventListener('click', () => {
+  resultScreen.style.display = 'none';
+  startScreen.style.display  = 'flex';
+  updateSpDisplay();
+});
+
+// ================================================================
+//  ポーズ制御
+// ================================================================
+function togglePause() {
+  if (!gameRunning) return;
+  paused ? resumeGame() : pauseGame();
+}
+
+function pauseGame() {
+  if (!gameRunning || paused) return;
+  paused = true;
+  clearInterval(timerInterval);
+  cancelAnimationFrame(animFrameId);
+  animFrameId = null;
+  pauseOverlay.classList.add('active');
+  pauseBtn.textContent = '▶ 再開';
+}
+
+function resumeGame() {
+  if (!paused) return;
+  paused = false;
+  pauseOverlay.classList.remove('active');
+  pauseBtn.textContent = '⏸ ポーズ';
+  // タイマー再開
+  timerInterval = setInterval(() => {
+    if (!gameRunning || paused) return;
+    timeLeft--;
+    timeVal.textContent = timeLeft;
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+  // アニメーション再開
+  animFrameId = requestAnimationFrame(gameLoop);
+}
+
+pauseBtn.addEventListener('click', togglePause);
+resumeBtn.addEventListener('click', togglePause);
+
+// ポーズ中にメニューへ戻る
+pauseMenuBtn.addEventListener('click', () => {
+  // ゲームを完全に停止してメニューへ
+  gameRunning = false;
+  paused      = false;
+  clearInterval(timerInterval);
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  timerInterval = null;
+  animFrameId   = null;
+  charging      = false;
+  pauseOverlay.classList.remove('active');
+  pauseBtn.textContent = '⏸ ポーズ';
+  gameScreen.style.display  = 'none';
+  startScreen.style.display = 'flex';
+  updateSpDisplay();
+});
+
+// Space キーでポーズ切り替え
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && gameScreen.style.display !== 'none') {
+    e.preventDefault();
+    togglePause();
+  }
+});
+
+// ================================================================
+//  ゲーム開始
+// ================================================================
+function startGame() {
+  const baseCfg  = DIFFICULTIES[diff];
+  cfg            = applyStats(baseCfg);   // ステータスを反映
+  score      = 0;
+  shots      = 0;
+  made       = 0;
+  combo      = 0;
+  maxCombo   = 0;
+  timeLeft   = cfg.timeLimit;
+  balls      = [];
+  particles  = [];
+  floatTexts = [];
+  power      = 0;
+  charging   = false;
+  paused     = false;
+  lastShotTime = 0;
+  nextRarity   = null; // startGame後にrollRarityが使えるよう一旦null、gameLoop前に初期化
+  powerPhase    = 0;
+  // 難易度が上がるほど振動が速くなる（Lv.1: 遅い ↔ Lv.10: 速い）
+  powerOscSpeed = (0.025 + (diff - 1) * 0.008) * (cfg._gaugeSpeedMult ?? 1.0);
+  hoopX      = CW / 2;
+  hoopDir    = 1;
+  windX         = 0;
+  windPhase     = Math.random() * Math.PI * 2; // ランダムな初期位相
+  windSpeed     = 0.008 + Math.random() * 0.012; // 変化速度（約5〜10秒で1往復）
+  windAmplitude = cfg.windForce;
+  windGust      = 0;
+  windGustTimer = 0;
+
+  // Lv.6以上は風あり（いきなりある程度吹いている状態に）
+  if (cfg.windForce > 0) windX = Math.sin(windPhase) * windAmplitude;
+
+  // バッジ
+  diffBadge.textContent = cfg.badge;
+  diffBadge.style.background = cfg.badgeColor + '33';
+  diffBadge.style.color = cfg.badgeColor;
+  diffBadge.style.border = `1px solid ${cfg.badgeColor}66`;
+
+  // ポーズ状態リセット
+  pauseOverlay.classList.remove('active');
+  pauseBtn.textContent = '⏸ ポーズ';
+
+  updateHUD();
+  resultScreen.style.display = 'none';
+  startScreen.style.display  = 'none';
+  gameScreen.style.display   = 'flex';
+
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (!gameRunning) return;
+    timeLeft--;
+    timeVal.textContent = timeLeft;
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  gameRunning = true;
+  nextRarity  = rollRarity();  // 最初の「次のボール」を抽選
+  animFrameId = requestAnimationFrame(gameLoop);
+}
+
+// ================================================================
+//  ゲーム終了
+// ================================================================
+function endGame() {
+  gameRunning = false;
+  clearInterval(timerInterval);
+  cancelAnimationFrame(animFrameId);
+  timerInterval = null;
+  animFrameId   = null;
+
+  // SP加算（スコア1点 = 1SP）
+  const earnedSP = score;
+  totalSP += earnedSP;
+  saveSP();
+
+  const pct   = shots > 0 ? Math.round(made / shots * 100) : 0;
+  const grade = getGrade(pct, diff);
+
+  gameScreen.style.display   = 'none';
+  resultScreen.style.display = 'flex';
+  resultDetail.innerHTML =
+    `難易度: <strong style="color:${cfg.badgeColor}">${cfg.label}</strong><br>` +
+    `スコア: <strong>${score} 点</strong><br>` +
+    `成功率: <strong>${made} / ${shots} (${pct}%)</strong><br>` +
+    `最大コンボ: <strong>${maxCombo} 連続</strong><br>` +
+    `評価: <strong style="color:#f4a438;font-size:1.2em">${grade}</strong>`;
+  document.getElementById('resultSpGain').textContent =
+    `💎 +${earnedSP} SP 獲得！（累計: ${totalSP} SP）`;
+  updateSpDisplay();
+}
+
+function getGrade(pct, d) {
+  // レベルが高いほど評価のハードルを上げる
+  const base = 80 - (d - 1) * 3;   // Lv.1:80  Lv.10:53
+  const bars = [base, base-20, base-40, base-55];
+  if (pct >= bars[0]) return '🏆 LEGENDARY';
+  if (pct >= bars[1]) return '🥇 GREAT';
+  if (pct >= bars[2]) return '🥈 GOOD';
+  if (pct >= bars[3]) return '🥉 KEEP TRYING';
+  return '😅 PRACTICE MORE';
+}
+
+// ================================================================
+//  HUD
+// ================================================================
+function updateHUD() {
+  scoreVal.textContent = score;
+  timeVal.textContent  = timeLeft;
+  shotVal.textContent  = shots;
+  madeVal.textContent  = made;
+}
+
+// ================================================================
+//  入力
+// ================================================================
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouseX = e.clientX - r.left;
+  mouseY = e.clientY - r.top;
+});
+
+// クリック押し中にゲージ振動、離したら発射
+canvas.addEventListener('mousedown', e => {
+  if (!gameRunning || paused) return;
+  if (Date.now() - lastShotTime < cfg.shotCooldown) return;
+  charging  = true;
+  powerPhase = -Math.PI / 2; // 0 から上昇スタート
+  power     = 0;
+});
+
+canvas.addEventListener('mouseup', () => {
+  if (!gameRunning || !charging) return;
+  charging = false;
+  fireShot(power);
+  lastShotTime = Date.now();
+  power = 0;
+  powerBar.style.width = '0%';
+});
+
+canvas.addEventListener('mouseleave', () => {
+  if (!gameRunning || !charging) return;
+  charging = false;
+  fireShot(power);
+  lastShotTime = Date.now();
+  power = 0;
+  powerBar.style.width = '0%';
+});
+
+// タッチ（押し中に振動、離したら発射）
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (!gameRunning || paused) return;
+  if (Date.now() - lastShotTime < cfg.shotCooldown) return;
+  const r = canvas.getBoundingClientRect();
+  mouseX = e.touches[0].clientX - r.left;
+  mouseY = e.touches[0].clientY - r.top;
+  charging   = true;
+  powerPhase = -Math.PI / 2;
+  power      = 0;
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  mouseX = e.touches[0].clientX - r.left;
+  mouseY = e.touches[0].clientY - r.top;
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (!gameRunning || !charging) return;
+  charging = false;
+  fireShot(power);
+  lastShotTime = Date.now();
+  power = 0;
+  powerBar.style.width = '0%';
+}, { passive: false });
+
+// ================================================================
+//  レアリティ定義
+// ================================================================
+const RARITIES = [
+  { id: 'LEGENDARY', label: '★LEGENDARY', mult: 10, baseRate: 0.01, color0: '#ffe566', color1: '#ff9900', color2: '#7a4400', glow: '#ffdd00', trailColor: '#ffdd00', size: 1.25 },
+  { id: 'EPIC',      label: '★EPIC',      mult:  5, baseRate: 0.04, color0: '#ee88ff', color1: '#9900cc', color2: '#440066', glow: '#cc44ff', trailColor: '#cc44ff', size: 1.1  },
+  { id: 'RARE',      label: '★RARE',      mult:  3, baseRate: 0.10, color0: '#88ddff', color1: '#0066cc', color2: '#002244', glow: '#44aaff', trailColor: '#44aaff', size: 1.0  },
+  { id: 'NORMAL',    label: '',           mult:  1, baseRate: 1.00, color0: '#ffb04c', color1: '#e06000', color2: '#7a2e00', glow: '#ff6600', trailColor: '#ff8800', size: 1.0  },
+];
+
+function rollRarity() {
+  // ラッキーボールステータスで確率倍率アップ（加算式）
+  const mult = 1.0 + (statLevels.luckyBall || 0) * STAT_DEFS[5].effectPerLv;
+  const r = Math.random();
+  let cumulative = 0;
+  for (const rar of RARITIES) {
+    if (rar.id === 'NORMAL') return rar; // 最後は必ず NORMAL
+    const rate = rar.baseRate * mult;
+    cumulative += rate;
+    if (r < cumulative) return rar;
+  }
+  return RARITIES[3]; // NORMAL
+}
+
+// ================================================================
+//  シュート発射
+// ================================================================
+function fireShot(pw) {
+  shots++;
+  updateHUD();
+
+  // マウス方向の単位ベクトル
+  const dx   = mouseX - BALL_SX;
+  const dy   = mouseY - BALL_SY;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+  // 速度スカラー: パワー20〜100 → speed 8〜18
+  const speed = 8 + (pw / MAX_POWER) * 10;
+  const vx = (dx / dist) * speed;
+  const vy = (dy / dist) * speed;
+
+  balls.push({
+    x: BALL_SX, y: BALL_SY,
+    vx, vy,
+    trail: [],
+    scored: false,
+    dead: false,
+    rarity: nextRarity || rollRarity(),
+  });
+  nextRarity = rollRarity(); // 次のボールを事前抽選
+}
+
+// ================================================================
+//  パーティクル
+// ================================================================
+function spawnParticles(x, y, color) {
+  for (let i = 0; i < 22; i++) {
+    const a   = Math.random() * Math.PI * 2;
+    const spd = 1.5 + Math.random() * 4.5;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * spd,
+      vy: Math.sin(a) * spd - 1,
+      life: 1.0,
+      color,
+      r: 3 + Math.random() * 4,
+    });
+  }
+}
+
+// ================================================================
+//  フロートテキスト
+// ================================================================
+function spawnFloat(x, y, text, color) {
+  floatTexts.push({ x, y, text, color, life: 1.0, vy: -1.8 });
+}
+
+// ================================================================
+//  衝突判定
+// ================================================================
+// ゴール通過（採点）
+function checkScore(b) {
+  if (b.vy <= 0) return false;   // 下降中のみ
+  const lx = hoopX - cfg.hoopW / 2;
+  const rx = hoopX + cfg.hoopW / 2;
+  if (b.y < HOOP_Y - BALL_R || b.y > HOOP_Y + BALL_R + 4) return false;
+  // ボール中心がリム内側を通過
+  const inner = BALL_R * 0.55;
+  return b.x > lx + inner && b.x < rx - inner;
+}
+
+// リム衝突（バウンド）
+function checkRim(b) {
+  const lx  = hoopX - cfg.hoopW / 2;
+  const rx  = hoopX + cfg.hoopW / 2;
+  const ry  = HOOP_Y;
+  const threshold = BALL_R * 0.85;
+
+  const dl = Math.hypot(b.x - lx, b.y - ry);
+  if (dl < threshold) {
+    const nx = (b.x - lx) / dl;
+    const ny = (b.y - ry) / dl;
+    const dot = b.vx * nx + b.vy * ny;
+    b.vx = (b.vx - 1.4 * dot * nx) * 0.55;
+    b.vy = (b.vy - 1.4 * dot * ny) * 0.55;
+    b.x  = lx + nx * threshold;
+    b.y  = ry + ny * threshold;
+    return;
+  }
+
+  const dr = Math.hypot(b.x - rx, b.y - ry);
+  if (dr < threshold) {
+    const nx = (b.x - rx) / dr;
+    const ny = (b.y - ry) / dr;
+    const dot = b.vx * nx + b.vy * ny;
+    b.vx = (b.vx - 1.4 * dot * nx) * 0.55;
+    b.vy = (b.vy - 1.4 * dot * ny) * 0.55;
+    b.x  = rx + nx * threshold;
+    b.y  = ry + ny * threshold;
+  }
+}
+
+// ================================================================
+//  メインループ
+// ================================================================
+function gameLoop() {
+  if (!gameRunning || paused) return;
+
+  // クリック中のみパワーを振動させる
+  if (charging) {
+    powerPhase += powerOscSpeed;
+    power = (Math.sin(powerPhase) * 0.5 + 0.5) * MAX_POWER;
+    powerBar.style.width = power + '%';
+  }
+
+  // ゴール移動
+  if (cfg.hoopSpeed > 0) {
+    hoopX += cfg.hoopSpeed * hoopDir;
+    const margin = cfg.hoopW / 2 + 28;
+    if (hoopX > CW - margin) hoopDir = -1;
+    if (hoopX < margin)       hoopDir =  1;
+  }
+
+  // 風変動（Lv.6以上）— サイン波で向きが周期的に反転 + ランダム突風
+  if (cfg.windForce > 0) {
+    // 位相を進める（速度はゲーム開始時にランダムに決定）
+    windPhase += windSpeed;
+
+    // 基本風 = サイン波（なめらかに向き変化）
+    const baseWind = Math.sin(windPhase) * windAmplitude;
+
+    // 突風タイマー処理
+    if (windGustTimer > 0) {
+      windGustTimer--;
+      // 突風はフレームごとに少しずつ減衰
+      windGust *= 0.96;
+    } else {
+      // ランダムに突風発生（約3秒に1回の確率）
+      if (Math.random() < 0.005) {
+        windGust      = (Math.random() - 0.5) * windAmplitude * 2.5;
+        windGustTimer = 40 + Math.floor(Math.random() * 40); // 40〜80フレーム持続
+      }
+    }
+
+    windX = baseWind + windGust;
+  }
+
+  // ボール更新
+  balls = balls.filter(b => {
+    // トレイル記録
+    b.trail.push({ x: b.x, y: b.y });
+    if (b.trail.length > 12) b.trail.shift();
+
+    // 物理
+    b.vx += windX;
+    b.vy += cfg.ballGravity;
+    b.x  += b.vx;
+    b.y  += b.vy;
+
+    // スコア判定（リム判定より先）
+    if (!b.scored && checkScore(b)) {
+      b.scored = true;
+      made++;
+      combo++;
+      maxCombo = Math.max(maxCombo, combo);
+
+      let pts = cfg.pointBase;
+      if      (combo >= 5) pts = cfg.pointBase * 3;
+      else if (combo >= 3) pts = cfg.pointBase * 2;
+      pts = Math.round(pts * b.rarity.mult);   // レアリティ倍率
+      score += pts;
+      updateHUD();
+
+      // レアリティに応じたパーティクル色
+      const rarColor = b.rarity.glow;
+      spawnParticles(b.x, HOOP_Y, rarColor);
+      spawnParticles(b.x, HOOP_Y + 16, 'rgba(255,255,255,0.6)');
+
+      // レアリティラベルをメッセージに付加
+      const rarLabel = b.rarity.id !== 'NORMAL' ? ` ${b.rarity.label}` : '';
+      const comboLabel = combo >= 5 ? `🔥 ${combo}連続！` : combo >= 3 ? `⚡ ${combo}連続` : '';
+      const msg = `${comboLabel}${rarLabel ? rarLabel + ' ' : ''}+${pts}`;
+      spawnFloat(b.x, HOOP_Y - 20, msg, rarColor || '#f4a438');
+      comboDisplay.textContent = combo >= 2 ? `${combo} 連続！` : '';
+    }
+
+    // リム衝突（採点済みボールも跳ねる）
+    if (!b.scored) checkRim(b);
+
+    // 画面外 → 削除
+    if (b.y > CH + 50 || b.x < -60 || b.x > CW + 60) {
+      if (!b.scored) {
+        combo = 0;
+        comboDisplay.textContent = '';
+      }
+      b.dead = true;
+    }
+    return !b.dead;
+  });
+
+  // パーティクル
+  particles = particles.filter(p => {
+    p.x  += p.vx;
+    p.y  += p.vy;
+    p.vy += 0.12;
+    p.life -= 0.035;
+    return p.life > 0;
+  });
+
+  // フロートテキスト
+  floatTexts = floatTexts.filter(f => {
+    f.y    += f.vy;
+    f.life -= 0.022;
+    return f.life > 0;
+  });
+
+  draw();
+  animFrameId = requestAnimationFrame(gameLoop);
+}
+
+// ================================================================
+//  描画
+// ================================================================
+function draw() {
+  ctx.clearRect(0, 0, CW, CH);
+
+  // --- 背景 ---
+  const bg = ctx.createLinearGradient(0, 0, 0, CH);
+  bg.addColorStop(0, '#0d2a50');
+  bg.addColorStop(1, '#16213e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, CW, CH);
+
+  // コートライン
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(CW / 2, CH + 30, 210, Math.PI, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(CW / 2 - 210, CH + 30);
+  ctx.lineTo(CW / 2 - 210, CH - 90);
+  ctx.moveTo(CW / 2 + 210, CH + 30);
+  ctx.lineTo(CW / 2 + 210, CH - 90);
+  ctx.stroke();
+  // フロア線
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = '#c8a060';
+  ctx.fillRect(0, CH - 8, CW, 8);
+  ctx.restore();
+
+  drawBackboard();
+  drawHoop();
+  drawParticles();   // ゴール裏（ネット内側）にパーティクル
+  drawBalls();
+  drawFloatTexts();
+  drawAimGuide();
+  drawWindIndicator();
+  drawNextIndicator();
+  drawCountdown();
+}
+
+// ================================================================
+//  バックボード
+// ================================================================
+function drawBackboard() {
+  const bx = hoopX;
+  const bbTop = HOOP_Y - 46;
+
+  // ポール（バックボード上端から画面上へ）
+  ctx.save();
+  const poleGrad = ctx.createLinearGradient(bx - 4, 0, bx + 4, 0);
+  poleGrad.addColorStop(0, '#333');
+  poleGrad.addColorStop(0.5, '#666');
+  poleGrad.addColorStop(1, '#333');
+  ctx.fillStyle = poleGrad;
+  ctx.fillRect(bx - 4, 0, 8, bbTop);
+  ctx.restore();
+
+  // ボード本体
+  ctx.save();
+  ctx.fillStyle = 'rgba(220,235,255,0.12)';
+  ctx.strokeStyle = 'rgba(200,220,255,0.55)';
+  ctx.lineWidth = 2;
+  const bbX = bx - BB_W / 2;
+  const bbY = bbTop - BB_H;
+  ctx.fillRect(bbX, bbY, BB_W, BB_H);
+  ctx.strokeRect(bbX, bbY, BB_W, BB_H);
+
+  // 内枠（シュートの目安）
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(bx - 26, bbY + BB_H - 30, 52, 26);
+  ctx.restore();
+}
+
+// ================================================================
+//  ゴール（リム + ネット）
+// ================================================================
+function drawHoop() {
+  const lx = hoopX - cfg.hoopW / 2;
+  const rx = hoopX + cfg.hoopW / 2;
+  const ry = HOOP_Y;
+  const netH = 30;
+  const segs  = 8;
+
+  // ネット（リムの下）
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.lineWidth = 1;
+  // 縦糸
+  for (let i = 0; i <= segs; i++) {
+    const nx = lx + (cfg.hoopW / segs) * i;
+    const ox = (i % 2 === 0 ? 1 : -1) * 3;
+    ctx.beginPath();
+    ctx.moveTo(nx, ry + 4);
+    ctx.lineTo(nx + ox, ry + netH * 0.5);
+    ctx.lineTo(nx, ry + netH);
+    ctx.stroke();
+  }
+  // 横糸
+  for (let j = 1; j <= 3; j++) {
+    ctx.beginPath();
+    ctx.moveTo(lx, ry + (netH / 3) * j);
+    ctx.lineTo(rx, ry + (netH / 3) * j);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // リム本体
+  ctx.save();
+  ctx.strokeStyle = '#c94e00';
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = '#ff6600';
+  ctx.beginPath();
+  ctx.moveTo(lx, ry);
+  ctx.lineTo(rx, ry);
+  ctx.stroke();
+
+  // ハイライト
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,160,60,0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(lx + 2, ry - 2);
+  ctx.lineTo(rx - 2, ry - 2);
+  ctx.stroke();
+
+  // 難易度カラーグロー
+  ctx.strokeStyle = cfg.rimColor;
+  ctx.globalAlpha = 0.35;
+  ctx.lineWidth = 3;
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = cfg.rimColor;
+  ctx.beginPath();
+  ctx.moveTo(lx, ry);
+  ctx.lineTo(rx, ry);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ================================================================
+//  ボール
+// ================================================================
+function drawBalls() {
+  balls.forEach(b => {
+    const rar = b.rarity;
+    const r   = BALL_R * rar.size;
+
+    // トレイル
+    b.trail.forEach((pt, i) => {
+      const t = i / b.trail.length;
+      ctx.save();
+      ctx.globalAlpha = t * (rar.id === 'NORMAL' ? 0.25 : 0.45);
+      ctx.fillStyle   = rar.trailColor;
+      ctx.shadowBlur  = rar.id !== 'NORMAL' ? 8 : 0;
+      ctx.shadowColor = rar.glow;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r * t * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    // LEGENDARY はオーラリング
+    if (rar.id === 'LEGENDARY') {
+      ctx.save();
+      ctx.globalAlpha = 0.35 + 0.15 * Math.sin(Date.now() / 120);
+      ctx.strokeStyle = rar.glow;
+      ctx.lineWidth   = 3;
+      ctx.shadowBlur  = 18;
+      ctx.shadowColor = rar.glow;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, r + 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // EPIC は星パーティクル（軌跡に輝き）
+    if (rar.id === 'EPIC' && Math.random() < 0.4) {
+      const sx = b.x + (Math.random() - 0.5) * r * 2;
+      const sy = b.y + (Math.random() - 0.5) * r * 2;
+      particles.push({ x: sx, y: sy, vx: (Math.random()-0.5)*1.5, vy: -1-Math.random(), life: 0.7, color: rar.glow, r: 2 });
+    }
+
+    // 本体グラデーション
+    ctx.save();
+    const g = ctx.createRadialGradient(b.x - 5, b.y - 5, 1, b.x, b.y, r);
+    g.addColorStop(0,   rar.color0);
+    g.addColorStop(0.5, rar.color1);
+    g.addColorStop(1,   rar.color2);
+    ctx.fillStyle  = g;
+    ctx.shadowBlur = rar.id === 'NORMAL' ? 10 : 20;
+    ctx.shadowColor= rar.glow;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ボールの縫い目
+    ctx.shadowBlur  = 0;
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth   = 1.4;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, r, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, r, Math.PI + 0.1, -0.1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y - r);
+    ctx.bezierCurveTo(b.x + 9, b.y - r * 0.4, b.x + 9, b.y + r * 0.4, b.x, b.y + r);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y - r);
+    ctx.bezierCurveTo(b.x - 9, b.y - r * 0.4, b.x - 9, b.y + r * 0.4, b.x, b.y + r);
+    ctx.stroke();
+
+    // レアリティラベル（NORMAL以外）
+    if (rar.id !== 'NORMAL') {
+      ctx.fillStyle   = rar.glow;
+      ctx.font        = `bold ${r < 16 ? 9 : 10}px Segoe UI`;
+      ctx.textAlign   = 'center';
+      ctx.shadowBlur  = 6;
+      ctx.shadowColor = rar.glow;
+      ctx.globalAlpha = 0.95;
+      ctx.fillText(rar.id, b.x, b.y - r - 5);
+    }
+    ctx.restore();
+  });
+}
+
+// ================================================================
+//  パーティクル
+// ================================================================
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life * 0.85;
+    ctx.fillStyle   = p.color;
+    ctx.shadowBlur  = 5;
+    ctx.shadowColor = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ================================================================
+//  フロートテキスト
+// ================================================================
+function drawFloatTexts() {
+  floatTexts.forEach(f => {
+    ctx.save();
+    ctx.globalAlpha = f.life;
+    ctx.fillStyle   = f.color;
+    ctx.font        = 'bold 19px Segoe UI';
+    ctx.textAlign   = 'center';
+    ctx.shadowBlur  = 8;
+    ctx.shadowColor = f.color;
+    ctx.fillText(f.text, f.x, f.y);
+    ctx.restore();
+  });
+}
+
+// ================================================================
+//  照準ガイド
+// ================================================================
+function drawAimGuide() {
+  // クリック中は現在のパワーで明るく、非クリック時は固定30で薄く表示
+  const pw      = charging ? power : 30;
+  const opacity = charging ? 1.0   : 0.35;
+
+  const dx    = mouseX - BALL_SX;
+  const dy    = mouseY - BALL_SY;
+  const dist  = Math.sqrt(dx * dx + dy * dy) || 1;
+  const speed = 8 + (pw / MAX_POWER) * 10;
+  let   vx    = (dx / dist) * speed;
+  let   vy    = (dy / dist) * speed;
+  let   px    = BALL_SX;
+  let   py    = BALL_SY;
+
+  const ratio   = pw / MAX_POWER;
+  const hue     = 120 - ratio * 120;
+  const dotClr  = charging ? `hsl(${hue}, 100%, 60%)` : 'rgba(255,255,255,0.7)';
+  const glowClr = charging ? `hsl(${hue}, 100%, 55%)` : 'rgba(255,255,255,0.3)';
+
+  ctx.save();
+  const DOT_INTERVAL = 3;
+  for (let i = 0; i < 120; i++) {
+    vx += windX * 0.5;
+    vy += cfg.ballGravity;
+    px += vx;
+    py += vy;
+
+    if (px < 0 || px > CW || py > CH + 20) break;
+
+    if (i % DOT_INTERVAL === 0) {
+      const t     = i / 120;
+      const alpha = (0.85 - t * 0.6) * opacity;
+      const r     = 5 - t * 3;
+      if (r <= 0.2) break;
+
+      ctx.globalAlpha = Math.max(0, alpha);
+      ctx.fillStyle   = dotClr;
+      ctx.shadowBlur  = charging ? 6 : 0;
+      ctx.shadowColor = glowClr;
+      ctx.beginPath();
+      ctx.arc(px, py, Math.max(0.5, r), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // パワーリング（クリック中のみ表示）
+  if (charging) {
+    const hue2 = 120 - ratio * 120;
+    ctx.save();
+    ctx.strokeStyle = `hsl(${hue2}, 100%, 60%)`;
+    ctx.lineWidth   = 3;
+    ctx.globalAlpha = 0.85;
+    ctx.shadowBlur  = 12;
+    ctx.shadowColor = `hsl(${hue2}, 100%, 55%)`;
+    ctx.beginPath();
+    ctx.arc(BALL_SX, BALL_SY, BALL_R + 6 + ratio * 12, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 発射位置マーカー（次のボールのレアリティカラーで表示）
+  const nr = nextRarity || RARITIES[3];
+  ctx.save();
+  ctx.strokeStyle = nr.glow;
+  ctx.lineWidth   = 2.5;
+  ctx.shadowBlur  = nr.id === 'NORMAL' ? 4 : 14;
+  ctx.shadowColor = nr.glow;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.arc(BALL_SX, BALL_SY, BALL_R + 3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 次のボールをミニプレビュー（発射位置の真上）
+  if (nr.id !== 'NORMAL') {
+    ctx.save();
+    const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 200);
+    const g2 = ctx.createRadialGradient(BALL_SX - 3, BALL_SY - BALL_R * 2.8 - 3, 1, BALL_SX, BALL_SY - BALL_R * 2.8, BALL_R * 0.7);
+    g2.addColorStop(0,   nr.color0);
+    g2.addColorStop(0.5, nr.color1);
+    g2.addColorStop(1,   nr.color2);
+    ctx.fillStyle  = g2;
+    ctx.shadowBlur = 14 * pulse;
+    ctx.shadowColor= nr.glow;
+    ctx.globalAlpha= 0.9;
+    ctx.beginPath();
+    ctx.arc(BALL_SX, BALL_SY - BALL_R * 2.8, BALL_R * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ================================================================
+//  風向き表示（Hard のみ）
+// ================================================================
+function drawWindIndicator() {
+  if (cfg.windForce === 0) return;
+  const wx  = 30, wy = 24;
+  const len = windX * 450;
+
+  // 突風中は赤く強調
+  const isGust = Math.abs(windGust) > windAmplitude * 0.5;
+  const clr    = isGust ? '#ff6666' : '#88ccff';
+
+  ctx.save();
+  ctx.fillStyle   = clr;
+  ctx.strokeStyle = clr;
+  ctx.lineWidth   = 2;
+  ctx.font        = 'bold 11px Segoe UI';
+  ctx.fillText(isGust ? 'GUST!' : 'WIND', wx - 10, wy - 10);
+
+  if (Math.abs(len) < 1) {
+    ctx.fillText('—', wx, wy + 4);
+  } else {
+    ctx.shadowBlur  = isGust ? 8 : 0;
+    ctx.shadowColor = clr;
+    ctx.beginPath();
+    ctx.moveTo(wx, wy);
+    ctx.lineTo(wx + len, wy);
+    ctx.stroke();
+    const d = len > 0 ? 1 : -1;
+    ctx.beginPath();
+    ctx.moveTo(wx + len, wy);
+    ctx.lineTo(wx + len - d * 8, wy - 5);
+    ctx.lineTo(wx + len - d * 8, wy + 5);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ================================================================
+//  NEXTボール インジケーター（左下）
+// ================================================================
+function drawNextIndicator() {
+  if (!nextRarity) return;
+  const nr  = nextRarity;
+  const bx  = 36, by = CH - 36;
+  const r   = BALL_R * 0.85;
+  const pulse = 0.75 + 0.25 * Math.sin(Date.now() / 200);
+
+  ctx.save();
+
+  // 背景パネル
+  ctx.fillStyle   = 'rgba(10,20,40,0.65)';
+  ctx.strokeStyle = nr.glow + '88';
+  ctx.lineWidth   = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(bx - r - 8, by - r - 18, r * 2 + 50, r * 2 + 24, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  // "NEXT" ラベル
+  ctx.fillStyle  = '#aaa';
+  ctx.font       = 'bold 9px Segoe UI';
+  ctx.textAlign  = 'left';
+  ctx.fillText('NEXT', bx - r, by - r - 6);
+
+  // ミニボール
+  const g = ctx.createRadialGradient(bx - 3, by - 3, 1, bx, by, r);
+  g.addColorStop(0,   nr.color0);
+  g.addColorStop(0.5, nr.color1);
+  g.addColorStop(1,   nr.color2);
+  ctx.fillStyle  = g;
+  ctx.shadowBlur = nr.id === 'NORMAL' ? 6 : 16 * pulse;
+  ctx.shadowColor= nr.glow;
+  ctx.globalAlpha= 0.95;
+  ctx.beginPath();
+  ctx.arc(bx, by, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // レアリティ名
+  ctx.shadowBlur  = 0;
+  ctx.globalAlpha = 1;
+  ctx.fillStyle   = nr.id === 'NORMAL' ? '#888' : nr.glow;
+  ctx.font        = `bold 9px Segoe UI`;
+  ctx.textAlign   = 'left';
+  ctx.fillText(nr.id, bx + r + 5, by + 4);
+
+  // 倍率
+  if (nr.mult > 1) {
+    ctx.fillStyle  = '#fff';
+    ctx.font       = `bold 11px Segoe UI`;
+    ctx.fillText(`×${nr.mult}`, bx + r + 5, by - 4);
+  }
+
+  ctx.restore();
+}
+
+// ================================================================
+//  残り時間カウントダウン（10秒以下で赤く点滅）
+// ================================================================
+function drawCountdown() {
+  if (timeLeft > 10) return;
+  const alpha = 0.3 + 0.3 * Math.sin(Date.now() / 150);
+  ctx.save();
+  ctx.fillStyle   = `rgba(255,60,60,${alpha})`;
+  ctx.font        = 'bold 56px Segoe UI';
+  ctx.textAlign   = 'center';
+  ctx.textBaseline= 'middle';
+  ctx.fillText(timeLeft, CW / 2, CH / 2);
+  ctx.restore();
+}
+</script>
+</body>
+</html>

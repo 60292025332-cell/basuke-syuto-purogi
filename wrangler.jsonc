@@ -1,0 +1,11 @@
+{
+  // Cloudflare Workers 設定ファイル
+  "name": "basuke-syuto-purogi",
+  "compatibility_date": "2025-09-07",
+
+  // 静的アセットとして index.html を配信する
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS"
+  }
+}
